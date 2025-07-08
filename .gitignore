@@ -73,3 +73,7 @@ wheels/
 *.bak
 *_backup.py
 *.backup
+
+# Database
+*.db
+recepten.db
