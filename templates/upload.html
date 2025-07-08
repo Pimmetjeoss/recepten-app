@@ -1,0 +1,419 @@
+{% extends "base.html" %}
+
+{% block title %}Nieuw Recept Uploaden - Mijn Recepten{% endblock %}
+
+{% block extra_css %}
+<style>
+    .upload-container {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    .upload-header {
+        text-align: center;
+        margin-bottom: 3rem;
+    }
+
+    .upload-header h1 {
+        font-size: 2.5rem;
+        color: var(--primary-color);
+        margin-bottom: 1rem;
+    }
+
+    .upload-header p {
+        font-size: 1.1rem;
+        color: #666;
+        line-height: 1.8;
+    }
+
+    .upload-form {
+        background-color: var(--card-background);
+        border-radius: 8px;
+        box-shadow: var(--shadow);
+        padding: 3rem;
+        animation: fadeIn 0.5s ease;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .upload-area {
+        border: 3px dashed var(--border-color);
+        border-radius: 8px;
+        padding: 4rem 2rem;
+        text-align: center;
+        transition: all 0.3s ease;
+        background-color: #f8f9fa;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .upload-area:hover,
+    .upload-area.drag-over {
+        border-color: var(--accent-color);
+        background-color: #e3f2fd;
+    }
+
+    .upload-area.drag-over {
+        transform: scale(1.02);
+    }
+
+    .upload-icon {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        display: block;
+        animation: float 3s ease-in-out infinite;
+    }
+
+    @keyframes float {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-10px); }
+    }
+
+    .file-input {
+        display: none;
+    }
+
+    .upload-button {
+        display: inline-block;
+        padding: 1rem 2rem;
+        background-color: var(--accent-color);
+        color: white;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 1.1rem;
+        margin-top: 1rem;
+    }
+
+    .upload-button:hover {
+        background-color: #2980b9;
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-hover);
+    }
+
+    .selected-file {
+        margin-top: 2rem;
+        padding: 1rem;
+        background-color: #d4edda;
+        border: 1px solid #c3e6cb;
+        border-radius: 4px;
+        color: #155724;
+        display: none;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .selected-file.show {
+        display: flex;
+    }
+
+    .file-info {
+        flex: 1;
+    }
+
+    .file-name {
+        font-weight: bold;
+        margin-bottom: 0.25rem;
+    }
+
+    .file-size {
+        font-size: 0.9rem;
+        color: #666;
+    }
+
+    .remove-file {
+        padding: 0.5rem 1rem;
+        background-color: var(--secondary-color);
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .remove-file:hover {
+        background-color: #c0392b;
+    }
+
+    .submit-section {
+        margin-top: 2rem;
+        text-align: center;
+        padding-top: 2rem;
+        border-top: 1px solid var(--border-color);
+    }
+
+    .submit-button {
+        padding: 1rem 3rem;
+        background-color: #27ae60;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        font-size: 1.1rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: none;
+    }
+
+    .submit-button.show {
+        display: inline-block;
+    }
+
+    .submit-button:hover {
+        background-color: #229954;
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-hover);
+    }
+
+    .submit-button:disabled {
+        background-color: #95a5a6;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    .info-section {
+        margin-top: 3rem;
+        padding: 2rem;
+        background-color: #e3f2fd;
+        border-radius: 8px;
+        border-left: 4px solid var(--accent-color);
+    }
+
+    .info-section h3 {
+        color: var(--accent-color);
+        margin-bottom: 1rem;
+    }
+
+    .info-section ul {
+        list-style: none;
+        padding: 0;
+    }
+
+    .info-section li {
+        padding: 0.5rem 0;
+        padding-left: 1.5rem;
+        position: relative;
+    }
+
+    .info-section li::before {
+        content: '✓';
+        position: absolute;
+        left: 0;
+        color: var(--accent-color);
+        font-weight: bold;
+    }
+
+    .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.7);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+    }
+
+    .loading-overlay.show {
+        display: flex;
+    }
+
+    .loading-content {
+        background-color: white;
+        padding: 3rem;
+        border-radius: 8px;
+        text-align: center;
+        animation: scaleIn 0.3s ease;
+    }
+
+    @keyframes scaleIn {
+        from { transform: scale(0.8); opacity: 0; }
+        to { transform: scale(1); opacity: 1; }
+    }
+
+    .loading-spinner {
+        width: 50px;
+        height: 50px;
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid var(--accent-color);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 1rem;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    @media (max-width: 768px) {
+        .upload-form {
+            padding: 2rem 1rem;
+        }
+
+        .upload-area {
+            padding: 3rem 1rem;
+        }
+
+        .upload-header h1 {
+            font-size: 2rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="upload-container">
+    <div class="upload-header">
+        <h1>Upload een Nieuw Recept</h1>
+        <p>Upload een foto van je recept en laat de magie gebeuren!<br>
+        Onze slimme OCR technologie haalt automatisch alle informatie uit je receptfoto.</p>
+    </div>
+
+    <form action="{{ url_for('upload') }}" method="post" enctype="multipart/form-data" class="upload-form" id="uploadForm">
+        <div class="upload-area" id="uploadArea">
+            <span class="upload-icon">📸</span>
+            <h3>Sleep je afbeelding hierheen</h3>
+            <p>of</p>
+            <label for="file" class="upload-button">Selecteer een afbeelding</label>
+            <input type="file" name="file" id="file" class="file-input" accept="image/*" required>
+        </div>
+
+        <div class="selected-file" id="selectedFile">
+            <div class="file-info">
+                <div class="file-name" id="fileName"></div>
+                <div class="file-size" id="fileSize"></div>
+            </div>
+            <button type="button" class="remove-file" id="removeFile">Verwijder</button>
+        </div>
+
+        <div class="submit-section">
+            <button type="submit" class="submit-button" id="submitButton">
+                🚀 Verwerk Recept
+            </button>
+        </div>
+    </form>
+
+    <div class="info-section">
+        <h3>💡 Tips voor de beste resultaten</h3>
+        <ul>
+            <li>Zorg voor een duidelijke, scherpe foto</li>
+            <li>Fotografeer het hele recept in één keer</li>
+            <li>Vermijd schaduwen en reflecties</li>
+            <li>Ondersteunde formaten: JPG, PNG, GIF, BMP, TIFF, WebP</li>
+            <li>Het systeem herkent Nederlandse recepten het beste</li>
+        </ul>
+    </div>
+</div>
+
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-content">
+        <div class="loading-spinner"></div>
+        <h3>Je recept wordt verwerkt...</h3>
+        <p>Dit kan even duren terwijl we de tekst analyseren</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('file');
+    const selectedFile = document.getElementById('selectedFile');
+    const fileName = document.getElementById('fileName');
+    const fileSize = document.getElementById('fileSize');
+    const removeFile = document.getElementById('removeFile');
+    const submitButton = document.getElementById('submitButton');
+    const uploadForm = document.getElementById('uploadForm');
+    const loadingOverlay = document.getElementById('loadingOverlay');
+
+    // Drag and drop functionality
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        uploadArea.addEventListener(eventName, preventDefaults, false);
+    });
+
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+        uploadArea.addEventListener(eventName, highlight, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        uploadArea.addEventListener(eventName, unhighlight, false);
+    });
+
+    function highlight(e) {
+        uploadArea.classList.add('drag-over');
+    }
+
+    function unhighlight(e) {
+        uploadArea.classList.remove('drag-over');
+    }
+
+    uploadArea.addEventListener('drop', handleDrop, false);
+
+    function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        handleFiles(files);
+    }
+
+    fileInput.addEventListener('change', function(e) {
+        handleFiles(this.files);
+    });
+
+    function handleFiles(files) {
+        if (files.length > 0) {
+            const file = files[0];
+            
+            // Check if file is an image
+            if (!file.type.startsWith('image/')) {
+                alert('Selecteer alsjeblieft een afbeelding.');
+                return;
+            }
+
+            // Update file input
+            fileInput.files = files;
+
+            // Show file info
+            fileName.textContent = file.name;
+            fileSize.textContent = formatFileSize(file.size);
+            selectedFile.classList.add('show');
+            submitButton.classList.add('show');
+        }
+    }
+
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    removeFile.addEventListener('click', function() {
+        fileInput.value = '';
+        selectedFile.classList.remove('show');
+        submitButton.classList.remove('show');
+    });
+
+    uploadForm.addEventListener('submit', function(e) {
+        if (!fileInput.files.length) {
+            e.preventDefault();
+            alert('Selecteer eerst een afbeelding.');
+            return;
+        }
+        
+        // Show loading overlay
+        loadingOverlay.classList.add('show');
+        submitButton.disabled = true;
+    });
+</script>
+{% endblock %}

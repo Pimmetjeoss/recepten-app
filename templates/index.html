@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block title %}Home - Mijn Recepten{% endblock %}
+
+{% block extra_css %}
+<style>
+    .recipe-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 2rem;
+        margin-top: 2rem;
+    }
+
+    .recipe-card {
+        background: var(--card-background);
+        border-radius: 8px;
+        padding: 1.5rem;
+        box-shadow: var(--shadow);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        text-decoration: none;
+        color: var(--text-color);
+        display: block;
+    }
+
+    .recipe-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-hover);
+    }
+
+    .recipe-title {
+        font-size: 1.2rem;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+        color: var(--primary-color);
+    }
+
+    .recipe-date {
+        font-size: 0.9rem;
+        color: #666;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+    }
+
+    .empty-state img {
+        max-width: 200px;
+        opacity: 0.5;
+        margin-bottom: 2rem;
+    }
+
+    .search-results {
+        background-color: #e3f2fd;
+        padding: 1rem;
+        border-radius: 4px;
+        margin-bottom: 2rem;
+    }
+
+    .welcome-banner {
+        background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+        color: white;
+        padding: 3rem 2rem;
+        border-radius: 8px;
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    .welcome-banner h1 {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .welcome-banner p {
+        font-size: 1.2rem;
+        margin-bottom: 2rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+{% if not zoekterm %}
+<div class="welcome-banner">
+    <h1>🍳 Welkom bij je Recepten App!</h1>
+    <p>Digitaliseer je recepten door simpelweg een foto te uploaden</p>
+    <a href="{{ url_for('upload') }}" class="btn" style="background-color: white; color: var(--primary-color);">
+        📸 Upload je eerste recept
+    </a>
+</div>
+{% endif %}
+
+{% if zoekterm %}
+<div class="search-results">
+    <p>Zoekresultaten voor: <strong>{{ zoekterm }}</strong></p>
+    <p>{{ recepten|length }} recept(en) gevonden</p>
+</div>
+{% endif %}
+
+<h2>{% if zoekterm %}Zoekresultaten{% else %}Alle Recepten{% endif %}</h2>
+
+{% if recepten %}
+<div class="recipe-grid">
+    {% for recept in recepten %}
+    <a href="{{ url_for('recept_detail', id=recept.id) }}" class="recipe-card">
+        <div class="recipe-title">{{ recept.titel }}</div>
+        <div class="recipe-date">
+            📅 {{ recept.timestamp if recept.timestamp else 'Onbekende datum' }}
+        </div>
+    </a>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    {% if zoekterm %}
+        <h3>Geen recepten gevonden</h3>
+        <p>Probeer een andere zoekterm of <a href="{{ url_for('index') }}">bekijk alle recepten</a></p>
+    {% else %}
+        <h3>Nog geen recepten</h3>
+        <p>Begin met het uploaden van je eerste recept!</p>
+        <a href="{{ url_for('upload') }}" class="btn btn-secondary mt-2">
+            📸 Upload een recept
+        </a>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

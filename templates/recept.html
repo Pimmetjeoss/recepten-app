@@ -1,0 +1,320 @@
+{% extends "base.html" %}
+
+{% block title %}{{ recept.titel }} - Mijn Recepten{% endblock %}
+
+{% block extra_css %}
+<style>
+    .recipe-container {
+        background-color: var(--card-background);
+        border-radius: 8px;
+        box-shadow: var(--shadow);
+        overflow: hidden;
+        animation: fadeIn 0.5s ease;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .recipe-header {
+        background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+        color: white;
+        padding: 3rem 2rem;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .recipe-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+        animation: pulse 4s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+    }
+
+    .recipe-header h1 {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+        position: relative;
+        z-index: 1;
+    }
+
+    .recipe-meta {
+        font-size: 1rem;
+        opacity: 0.9;
+        position: relative;
+        z-index: 1;
+    }
+
+    .recipe-content {
+        padding: 2rem;
+    }
+
+    .recipe-grid {
+        display: grid;
+        grid-template-columns: 1fr 2fr;
+        gap: 3rem;
+        margin-top: 2rem;
+    }
+
+    .recipe-section {
+        margin-bottom: 2rem;
+    }
+
+    .section-title {
+        font-size: 1.5rem;
+        color: var(--primary-color);
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid var(--border-color);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .section-icon {
+        font-size: 1.8rem;
+    }
+
+    /* Ingrediënten Styling */
+    .ingredients-list {
+        list-style: none;
+        padding: 0;
+    }
+
+    .ingredient-item {
+        padding: 0.75rem;
+        margin-bottom: 0.5rem;
+        background-color: #f8f9fa;
+        border-radius: 4px;
+        border-left: 3px solid var(--accent-color);
+        transition: all 0.3s ease;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .ingredient-item:hover {
+        background-color: #e9ecef;
+        transform: translateX(5px);
+    }
+
+    .ingredient-name {
+        font-weight: 500;
+    }
+
+    .ingredient-amount {
+        color: #666;
+        font-size: 0.9rem;
+    }
+
+    /* Stappen Styling */
+    .steps-list {
+        list-style: none;
+        padding: 0;
+        counter-reset: step-counter;
+    }
+
+    .step-item {
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        background-color: #f8f9fa;
+        border-radius: 4px;
+        position: relative;
+        padding-left: 4rem;
+        transition: all 0.3s ease;
+        counter-increment: step-counter;
+    }
+
+    .step-item:hover {
+        background-color: #e9ecef;
+        box-shadow: var(--shadow);
+    }
+
+    .step-item::before {
+        content: counter(step-counter);
+        position: absolute;
+        left: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 2.5rem;
+        height: 2.5rem;
+        background-color: var(--accent-color);
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 1.2rem;
+    }
+
+    /* Benodigdheden Styling */
+    .tools-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        padding: 0;
+        list-style: none;
+    }
+
+    .tool-item {
+        background-color: #e3f2fd;
+        color: var(--primary-color);
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+    }
+
+    .tool-item:hover {
+        background-color: #bbdefb;
+        transform: scale(1.05);
+    }
+
+    /* Actions */
+    .recipe-actions {
+        margin-top: 3rem;
+        padding-top: 2rem;
+        border-top: 1px solid var(--border-color);
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+    }
+
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 2rem;
+        color: #666;
+        font-style: italic;
+    }
+
+    /* Print Styles */
+    @media print {
+        header, footer, .recipe-actions, nav {
+            display: none;
+        }
+
+        .recipe-container {
+            box-shadow: none;
+        }
+
+        .recipe-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .recipe-grid {
+            grid-template-columns: 1fr;
+            gap: 2rem;
+        }
+
+        .recipe-header h1 {
+            font-size: 2rem;
+        }
+
+        .step-item {
+            padding-left: 3.5rem;
+        }
+
+        .recipe-actions {
+            flex-direction: column;
+        }
+
+        .recipe-actions .btn {
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="recipe-container">
+    <div class="recipe-header">
+        <h1>{{ recept.titel }}</h1>
+        <p class="recipe-meta">
+            📅 Toegevoegd op {{ recept.timestamp[:10] }} om {{ recept.timestamp[11:16] }}
+        </p>
+    </div>
+
+    <div class="recipe-content">
+        <div class="recipe-grid">
+            <!-- Linker kolom: Ingrediënten -->
+            <div>
+                <div class="recipe-section">
+                    <h2 class="section-title">
+                        <span class="section-icon">🥘</span>
+                        Ingrediënten
+                    </h2>
+                    {% if ingredienten %}
+                        <ul class="ingredients-list">
+                            {% for ingredient in ingredienten %}
+                            <li class="ingredient-item">
+                                <span class="ingredient-name">{{ ingredient.naam }}</span>
+                                <span class="ingredient-amount">
+                                    {% if ingredient.hoeveelheid %}{{ ingredient.hoeveelheid }}{% endif %}
+                                    {% if ingredient.eenheid %}{{ ingredient.eenheid }}{% endif %}
+                                </span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="empty-state">Geen ingrediënten beschikbaar</p>
+                    {% endif %}
+                </div>
+
+                {% if benodigdheden %}
+                <div class="recipe-section">
+                    <h2 class="section-title">
+                        <span class="section-icon">🔧</span>
+                        Benodigdheden
+                    </h2>
+                    <ul class="tools-list">
+                        {% for tool in benodigdheden %}
+                        <li class="tool-item">{{ tool }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Rechter kolom: Bereidingswijze -->
+            <div>
+                <div class="recipe-section">
+                    <h2 class="section-title">
+                        <span class="section-icon">👨‍🍳</span>
+                        Bereidingswijze
+                    </h2>
+                    {% if stappen %}
+                        <ol class="steps-list">
+                            {% for stap in stappen %}
+                            <li class="step-item">{{ stap }}</li>
+                            {% endfor %}
+                        </ol>
+                    {% else %}
+                        <p class="empty-state">Geen bereidingsstappen beschikbaar</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="recipe-actions">
+            <a href="{{ url_for('index') }}" class="btn btn-secondary">← Terug naar overzicht</a>
+            <button onclick="window.print()" class="btn">🖨️ Print recept</button>
+        </div>
+    </div>
+</div>
+{% endblock %}

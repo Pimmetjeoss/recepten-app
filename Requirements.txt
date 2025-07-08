@@ -1,0 +1,26 @@
+# Flask en web framework
+flask==3.0.0
+werkzeug==3.0.1
+
+# Database
+# sqlite3 is ingebouwd in Python, geen installatie nodig
+
+# OCR en beeldverwerking
+pytesseract==0.3.10
+pillow==10.2.0
+
+# AI en Google Gemini
+google-generativeai==0.3.2
+
+# Environment variabelen
+python-dotenv==1.0.0
+
+# Sentry voor error tracking en monitoring
+sentry-sdk[flask]==1.40.0
+
+# Extra dependencies voor betere Sentry integratie
+blinker==1.7.0  # Voor Flask signalen
+
+# Optionele dependencies voor productie
+gunicorn==21.2.0  # WSGI server voor productie
+python-json-logger==2.0.7  # Voor gestructureerde logging
