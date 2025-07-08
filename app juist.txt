@@ -406,47 +406,25 @@ def recept_detail(id):
 @app.route('/zoeken')
 def zoeken():
     query = request.args.get('q', '')
-    search_type = request.args.get('type', 'all')  # 'all', 'titel', 'ingredienten'
-    
     if not query:
         return redirect(url_for('index'))
     
     try:
-        with sentry_sdk.start_span(op="search", description=f"Search recipes: {query} (type: {search_type})"):
+        with sentry_sdk.start_span(op="search", description=f"Search recipes: {query}"):
             conn = get_db_connection()
-            
-            # Bouw query op basis van zoektype
-            if search_type == 'titel':
-                cursor = conn.execute('''
-                    SELECT DISTINCT id, titel, timestamp, ingredienten 
-                    FROM recepten 
-                    WHERE titel LIKE ?
-                    ORDER BY timestamp DESC
-                ''', (f'%{query}%',))
-            elif search_type == 'ingredienten':
-                cursor = conn.execute('''
-                    SELECT DISTINCT id, titel, timestamp, ingredienten 
-                    FROM recepten 
-                    WHERE ingredienten LIKE ?
-                    ORDER BY timestamp DESC
-                ''', (f'%{query}%',))
-            else:  # 'all'
-                cursor = conn.execute('''
-                    SELECT DISTINCT id, titel, timestamp, ingredienten 
-                    FROM recepten 
-                    WHERE titel LIKE ? OR ingredienten LIKE ? OR stappen LIKE ?
-                    ORDER BY timestamp DESC
-                ''', (f'%{query}%', f'%{query}%', f'%{query}%'))
-            
+            cursor = conn.execute('''
+                SELECT id, titel, timestamp 
+                FROM recepten 
+                WHERE titel LIKE ? OR ingredienten LIKE ? OR stappen LIKE ?
+                ORDER BY timestamp DESC
+            ''', (f'%{query}%', f'%{query}%', f'%{query}%'))
             recepten_raw = cursor.fetchall()
             conn.close()
             
-            # Converteer timestamps en markeer gevonden ingrediënten
+            # Converteer timestamps
             recepten = []
             for recept in recepten_raw:
                 recept_dict = dict(recept)
-                
-                # Parse timestamp
                 if recept_dict['timestamp']:
                     try:
                         recept_dict['timestamp'] = datetime.strptime(
@@ -455,32 +433,12 @@ def zoeken():
                         )
                     except ValueError:
                         pass
-                
-                # Als we op ingrediënten zoeken, markeer welke ingrediënten matchen
-                if search_type == 'ingredienten' and recept_dict.get('ingredienten'):
-                    try:
-                        ingredienten_lijst = json.loads(recept_dict['ingredienten'])
-                        matching_ingredients = []
-                        
-                        for ingredient in ingredienten_lijst:
-                            ingredient_name = ingredient.get('naam', '').lower()
-                            if query.lower() in ingredient_name:
-                                matching_ingredients.append(ingredient.get('naam', ''))
-                        
-                        recept_dict['matching_ingredients'] = matching_ingredients
-                    except json.JSONDecodeError:
-                        recept_dict['matching_ingredients'] = []
-                
                 recepten.append(recept_dict)
             
             sentry_sdk.set_tag("search.query", query)
-            sentry_sdk.set_tag("search.type", search_type)
             sentry_sdk.set_tag("search.results_count", len(recepten))
             
-            return render_template('index.html', 
-                                 recepten=recepten, 
-                                 zoekterm=query,
-                                 search_type=search_type)
+            return render_template('index.html', recepten=recepten, zoekterm=query)
     except Exception as e:
         logger.error(f"Search error for query '{query}': {str(e)}")
         sentry_sdk.capture_exception(e)
@@ -607,67 +565,6 @@ def api_recepten():
         logger.error(f"API error: {str(e)}")
         sentry_sdk.capture_exception(e)
         return jsonify({"error": "Internal server error"}), 500
-
-@app.route('/api/ingredienten')
-def api_ingredienten():
-    """API endpoint om alle unieke ingrediënten op te halen voor autocomplete"""
-    try:
-        conn = get_db_connection()
-        recepten = conn.execute('SELECT ingredienten FROM recepten').fetchall()
-        conn.close()
-        
-        # Verzamel alle unieke ingrediënten
-        alle_ingredienten = set()
-        for recept in recepten:
-            if recept['ingredienten']:
-                try:
-                    ingredienten_lijst = json.loads(recept['ingredienten'])
-                    for ingredient in ingredienten_lijst:
-                        if 'naam' in ingredient:
-                            alle_ingredienten.add(ingredient['naam'].lower())
-                except json.JSONDecodeError:
-                    continue
-        
-        # Sorteer alfabetisch
-        ingredienten_sorted = sorted(list(alle_ingredienten))
-        
-        return jsonify({
-            "ingredienten": ingredienten_sorted,
-            "count": len(ingredienten_sorted)
-        })
-        
-    except Exception as e:
-        logger.error(f"API ingredienten error: {str(e)}")
-        sentry_sdk.capture_exception(e)
-        return jsonify({"error": "Internal server error"}), 500
-
-@app.route('/geavanceerd-zoeken')
-def geavanceerd_zoeken():
-    """Geavanceerde zoekpagina met meerdere filters"""
-    try:
-        # Haal alle unieke ingrediënten op voor checkboxes
-        conn = get_db_connection()
-        recepten = conn.execute('SELECT ingredienten FROM recepten').fetchall()
-        conn.close()
-        
-        alle_ingredienten = set()
-        for recept in recepten:
-            if recept['ingredienten']:
-                try:
-                    ingredienten_lijst = json.loads(recept['ingredienten'])
-                    for ingredient in ingredienten_lijst:
-                        if 'naam' in ingredient:
-                            alle_ingredienten.add(ingredient['naam'])
-                except json.JSONDecodeError:
-                    continue
-        
-        return render_template('geavanceerd_zoeken.html', 
-                             ingredienten=sorted(list(alle_ingredienten)))
-    except Exception as e:
-        logger.error(f"Advanced search error: {str(e)}")
-        sentry_sdk.capture_exception(e)
-        flash('Er is een fout opgetreden.')
-        return redirect(url_for('index'))
 
 @app.route('/health')
 def health_check():
